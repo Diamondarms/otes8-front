@@ -2,16 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-url.com/:path*"
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
+      "destination": "https://otes8-back.vercel.app/:path*"
     },
     {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
