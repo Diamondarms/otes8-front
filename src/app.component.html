@@ -1,0 +1,370 @@
+<!-- Global Message Bar -->
+@if (message(); as msg) {
+<div
+  class="sticky top-0 z-50 p-3 rounded-lg mx-4 mt-4 text-white font-medium text-sm flex justify-between items-center shadow-md"
+  [class.bg-green-500]="msg.type === 'success'"
+  [class.bg-red-500]="msg.type === 'error'"
+  role="alert"
+>
+  <span>{{ msg.text }}</span>
+  <button (click)="message.set(null)" class="ml-2 text-xl font-bold leading-none" aria-label="Close message">&times;</button>
+</div>
+}
+
+<!-- Login Screen -->
+@if (!isLoggedIn()) {
+<div class="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-5">
+  <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+    <h1 class="text-5xl font-bold text-gray-800 mb-2">KAKEBO</h1>
+    <p class="text-gray-500 mb-6">Sua ferramenta de finanças pessoais.</p>
+    <form (submit)="handleLogin($event)" class="text-left">
+      <h2 class="text-xl font-semibold text-gray-600 mb-5">Entrar ou Cadastrar</h2>
+      <div class="mb-4">
+        <label for="loginName" class="block text-sm font-medium text-gray-500 mb-1">Seu Nome</label>
+        <input type="text" id="loginName" [value]="loginName()" (input)="loginName.set($any($event.target).value)" placeholder="Digite seu nome" required class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      @if (loginError()) {
+      <p class="text-red-500 text-sm text-center mb-4" role="alert">{{ loginError() }}</p>
+      }
+      <button type="submit" class="w-full p-3 bg-green-500 text-white rounded-lg font-semibold text-lg hover:bg-green-600 transition-colors">Acessar</button>
+    </form>
+  </div>
+</div>
+} @else {
+<!-- Main Application Screen -->
+<div class="max-w-md mx-auto bg-gray-100 min-h-screen">
+  <div class="p-4">
+    <header class="text-center pt-2">
+      <h1 class="text-3xl font-bold text-gray-800">KAKEBO</h1>
+      <div class="flex justify-center items-center gap-2 my-4 text-lg font-semibold text-gray-800">
+        <button (click)="navigateMonth('prev')" aria-label="Mês anterior" class="p-2 rounded-full hover:bg-gray-200"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+        <span class="w-36 text-center">{{ formattedCurrentMonthForDisplay() }}</span>
+        <button (click)="navigateMonth('next')" aria-label="Próximo mês" class="p-2 rounded-full hover:bg-gray-200"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
+        <button (click)="isCalendarPickerOpen.set(true)" aria-label="Selecionar mês e ano" class="p-2 rounded-full hover:bg-gray-200"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></button>
+        <button (click)="handleLogout()" class="ml-2 text-xs text-gray-500 border border-gray-500 rounded-md px-2 py-1 hover:bg-gray-200" aria-label="Sair da conta">Sair</button>
+      </div>
+    </header>
+
+    @if (appData(); as data) {
+    <div class="grid grid-cols-1 gap-4 mb-4">
+      <!-- Available Balance -->
+      <div class="bg-white rounded-xl p-4 shadow-md">
+        <div class="flex justify-between items-center mb-1">
+          <h3 class="text-sm font-semibold text-gray-500">Saldo p/ Gastos Variáveis</h3>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(data.dinheiroDisponivelGastosVariaveis) }}</p>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-green-500 h-2 rounded-full" [style.width.%]="data.saldoDisponivelVsEntradasPercentual"></div>
+        </div>
+      </div>
+
+      <!-- Spending Suggestion -->
+      <div class="bg-white rounded-xl p-4 shadow-md" [class.opacity-60]="isPastMonth()">
+        <div class="flex justify-between items-center mb-1">
+          <h3 class="text-sm font-semibold text-gray-500">Sugestão de Gasto Semanal</h3>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+        </div>
+        <p class="text-2xl font-bold" [class.text-gray-900]="!isPastMonth()" [class.text-gray-500]="isPastMonth()">{{ formatCurrency(data.sugestaoGastoSemanal) }} / semana</p>
+        @if (isPastMonth()) {
+        <p class="text-xs text-gray-500 mt-1">Mês encerrado. Este é o valor final.</p>
+        } @else if (isFutureMonth()) {
+        <p class="text-xs text-gray-500 mt-1">Cálculo a partir de 01/{{ currentMesAno().split('-')[1] }}</p>
+        } @else {
+        <p class="text-xs text-gray-500 mt-1">Baseado no saldo restante de hoje: {{ formatDate(today(), 'dd/MM', 'pt-BR') }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Income Section -->
+    <div class="bg-white rounded-xl shadow-md mb-4">
+      <div class="flex justify-between items-center p-4 cursor-pointer" (click)="toggleSection('entradas')" tabindex="0" (keydown.enter)="toggleSection('entradas')" [attr.aria-expanded]="openSections()['entradas']">
+        <h3 class="text-lg font-semibold text-gray-800">Entradas</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-semibold text-gray-800">{{ formatCurrency(data.totalEntradas) }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform" [class.rotate-180]="openSections()['entradas']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </div>
+      </div>
+      @if (openSections()['entradas']) {
+      <div class="px-4 pb-4 border-t border-gray-200">
+        <ul class="divide-y divide-gray-100">
+          @for (item of financeService.entradasDoMes(); track item.id) {
+          <li class="flex justify-between items-center py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+              <p class="text-sm text-gray-500">{{ formatDate(item.date, 'dd/MM/yyyy', 'pt-BR') }}</p>
+            </div>
+            <div class="text-right ml-2">
+              <p class="text-sm font-medium text-green-600">{{ formatCurrency(item.value) }}</p>
+              <div class="flex gap-2 justify-end mt-1">
+                <button (click)="handleDeleteFromCollapsible(item)" class="text-gray-400 hover:text-red-500" aria-label="Deletar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              </div>
+            </div>
+          </li>
+          } @empty {
+          <li class="py-3 text-sm text-gray-500">Nenhuma entrada registrada.</li>
+          }
+        </ul>
+        <button (click)="handleOpenQuickEditModal(RecordTypeEnum.Entrada, 'add')" class="w-full mt-3 py-2 text-sm text-blue-500 font-medium border-2 border-dashed border-blue-400 rounded-lg hover:bg-blue-50 transition">Adicionar Novo +</button>
+      </div>
+      }
+    </div>
+
+    <!-- Fixed Expenses Section -->
+    <div class="bg-white rounded-xl shadow-md mb-4">
+      <div class="flex justify-between items-center p-4 cursor-pointer" (click)="toggleSection('gastosFixos')" tabindex="0" (keydown.enter)="toggleSection('gastosFixos')" [attr.aria-expanded]="openSections()['gastosFixos']">
+        <h3 class="text-lg font-semibold text-gray-800">Gastos Fixos</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-semibold text-gray-800">{{ formatCurrency(data.totalGastosFixos) }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform" [class.rotate-180]="openSections()['gastosFixos']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </div>
+      </div>
+      @if (openSections()['gastosFixos']) {
+      <div class="px-4 pb-4 border-t border-gray-200">
+        <ul class="divide-y divide-gray-100">
+          @for (item of financeService.gastosFixosDoMes(); track item.id) {
+          <li class="flex justify-between items-center py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+              <p class="text-sm text-gray-500">Vencimento: {{ formatDate(item.due_date, 'MM/yyyy', 'pt-BR') }}</p>
+            </div>
+            <div class="text-right ml-2">
+              <p class="text-sm font-medium text-red-600">{{ formatCurrency(item.value) }}</p>
+              <div class="flex gap-2 justify-end mt-1">
+                <button (click)="handleOpenQuickEditModal(RecordTypeEnum.GastoFixo, 'edit', item)" class="text-gray-400 hover:text-blue-500" aria-label="Editar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg></button>
+                <button (click)="handleDeleteFromCollapsible(item)" class="text-gray-400 hover:text-red-500" aria-label="Deletar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              </div>
+            </div>
+          </li>
+          } @empty {
+          <li class="py-3 text-sm text-gray-500">Nenhum gasto fixo registrado.</li>
+          }
+        </ul>
+        <button (click)="handleOpenQuickEditModal(RecordTypeEnum.GastoFixo, 'add')" class="w-full mt-3 py-2 text-sm text-blue-500 font-medium border-2 border-dashed border-blue-400 rounded-lg hover:bg-blue-50 transition">Adicionar Novo +</button>
+      </div>
+      }
+    </div>
+
+    <!-- Variable Expenses Section -->
+    <div class="bg-white rounded-xl shadow-md mb-4">
+      <div class="flex justify-between items-center p-4 cursor-pointer" (click)="toggleSection('gastosVariaveis')" tabindex="0" (keydown.enter)="toggleSection('gastosVariaveis')" [attr.aria-expanded]="openSections()['gastosVariaveis']">
+        <h3 class="text-lg font-semibold text-gray-800">Gastos Variáveis</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-semibold text-gray-800">{{ formatCurrency(data.totalGastosVariaveisAvista) }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform" [class.rotate-180]="openSections()['gastosVariaveis']" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </div>
+      </div>
+      
+      @if (!openSections()['gastosVariaveis']) {
+      <div class="px-4 pb-4 border-t border-gray-200">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 pt-3 text-sm">
+          @for (cat of financeService.categoriasGastoVariavel; track cat) {
+          <div class="flex justify-between">
+            <span class="text-gray-500">{{ cat.charAt(0).toUpperCase() + cat.slice(1) }}:</span>
+            <span class="font-medium text-gray-700">{{ formatCurrency(data.gastosVariaveisAvistaCategorias[cat] || 0) }}</span>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="px-4 pb-4 border-t border-gray-200">
+        <ul class="divide-y divide-gray-100">
+          @for (item of financeService.gastosVariaveisDoMes(); track item.id) {
+          <li class="flex justify-between items-center py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+              <p class="text-sm text-gray-500">{{ formatDate(item.date, 'dd/MM/yyyy', 'pt-BR') }} - <span class="font-medium">{{ getCategoryName(item.category) }}</span></p>
+            </div>
+            <div class="text-right ml-2">
+              <p class="text-sm font-medium text-red-600">{{ formatCurrency(item.value) }}</p>
+              <div class="flex gap-2 justify-end mt-1">
+                <button (click)="handleDeleteFromCollapsible(item)" class="text-gray-400 hover:text-red-500" aria-label="Deletar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              </div>
+            </div>
+          </li>
+          } @empty {
+          <li class="py-3 text-sm text-gray-500">Nenhum gasto variável registrado.</li>
+          }
+        </ul>
+        <button (click)="handleOpenQuickEditModal(RecordTypeEnum.GastoVariavel, 'add')" class="w-full mt-3 py-2 text-sm text-blue-500 font-medium border-2 border-dashed border-blue-400 rounded-lg hover:bg-blue-50 transition">Adicionar Novo +</button>
+      </div>
+      }
+    </div>
+
+    <!-- Weekly History -->
+    <div class="bg-white rounded-xl p-4 shadow-md mb-4">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-lg font-semibold text-gray-800">Histórico Semanal</h3>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        @for (week of weeksOfMonthFixed(); track week.weekOfMonth) {
+        <button (click)="handleOpenWeekDetails(week)" class="bg-gray-50 p-3 rounded-lg text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <span class="text-xs text-gray-500">{{ week.label }}</span>
+          <strong class="block text-sm font-semibold text-gray-900 mt-1">{{ formatCurrency(getWeekTotal(week, data.relatorioGastosVariaveisSemanal)) }}</strong>
+        </button>
+        }
+      </div>
+    </div>
+    
+    <!-- Savings Goal -->
+    <div class="bg-white rounded-xl p-4 shadow-md mb-4">
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="text-sm font-semibold text-gray-500">Meta de Economia</h3>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7" /></svg>
+      </div>
+      
+      @if (isMetaEditing()) {
+      <input #metaInput type="number" [value]="editableMetaValor()" (input)="editableMetaValor.set($any($event.target).value)" (blur)="handleMetaValueBlurOrEnter()" (keydown.enter)="handleMetaValueBlurOrEnter()" class="text-2xl font-bold text-gray-900 bg-gray-100 border border-blue-400 rounded-md p-1 w-full" aria-label="Valor da meta de economia" />
+      } @else {
+      <p #metaInput class="text-2xl font-bold text-gray-900 cursor-pointer" (click)="handleMetaValueClick(metaInput)" tabindex="0" (keydown.enter)="handleMetaValueClick(metaInput)" aria-label="Meta de economia atual, clique para editar">{{ formatCurrency(financeService.metaDoMesAtual()?.value || 0) }}</p>
+      }
+      <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+        <div class="bg-blue-500 h-2 rounded-full" [style.width.%]="data.metaProgressoRealPercentual"></div>
+      </div>
+    </div>
+
+    } @else {
+    <div class="text-center p-10 text-gray-500">
+      <p>Carregando dados...</p>
+    </div>
+    }
+  </div>
+  
+  <!-- MODALS -->
+  @if (quickEditModalConfig(); as config) {
+  <div class="fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-center items-center p-4" (click)="handleCloseQuickEditModal()">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md" (click)="$event.stopPropagation()">
+      <h3 class="text-lg font-semibold text-gray-800 p-4 border-b border-gray-200">{{ config.mode === 'add' ? 'Adicionar' : 'Editar' }} {{ config.type === RecordTypeEnum.Entrada ? 'Entrada' : (config.type === RecordTypeEnum.GastoFixo ? 'Gasto Fixo' : 'Gasto Variável') }}</h3>
+      <form (submit)="handleQuickEditModalSave($event, config.type)">
+        <div class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label [for]="'nomeQE-' + config.type" class="block text-sm font-medium text-gray-600 mb-1">Nome</label>
+            <input type="text" [id]="'nomeQE-' + config.type" name="name" [(ngModel)]="modalFormData.name" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label [for]="'valorQE-' + config.type" class="block text-sm font-medium text-gray-600 mb-1">Valor (R$)</label>
+            <input type="number" [id]="'valorQE-' + config.type" name="value" [(ngModel)]="modalFormData.value" required min="0.01" step="0.01" class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          @if (config.type === RecordTypeEnum.Entrada) {
+          <div>
+            <label for="dataQE-entrada" class="block text-sm font-medium text-gray-600 mb-1">Data</label>
+            <input type="date" id="dataQE-entrada" name="date" [(ngModel)]="modalFormData.date" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          }
+          
+          @if (config.type === RecordTypeEnum.GastoFixo) {
+          <div>
+            <label for="date-gastoFixo" class="block text-sm font-medium text-gray-600 mb-1">Mês de Início</label>
+            <input type="month" id="date-gastoFixo" name="date" [(ngModel)]="modalFormData.date" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="due_date_gastoFixo" class="block text-sm font-medium text-gray-600 mb-1">Mês de Vencimento</label>
+            <input type="month" id="due_date_gastoFixo" name="due_date" [(ngModel)]="modalFormData.due_date" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          }
+          
+          @if (config.type === RecordTypeEnum.GastoVariavel) {
+          <div>
+            <label for="dataQGV" class="block text-sm font-medium text-gray-600 mb-1">Data da Compra</label>
+            <input type="date" id="dataQGV" name="data" [(ngModel)]="modalFormData.date" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="categoriaQGV" class="block text-sm font-medium text-gray-600 mb-1">Categoria</label>
+            <select id="categoriaQGV" name="category" [(ngModel)]="modalFormData.category" required class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              @for (cat of financeService.categoriasGastoVariavel; track cat) {
+              <option [value]="cat">{{ cat.charAt(0).toUpperCase() + cat.slice(1) }}</option>
+              }
+            </select>
+          </div>
+          }
+        </div>
+        <div class="flex justify-end gap-3 p-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+          <button type="button" (click)="handleCloseQuickEditModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+  
+  @if (isWeekDetailsModalOpen() && selectedWeekForDetails(); as week) {
+  <div class="fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-center items-center p-4" (click)="isWeekDetailsModalOpen.set(false)">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md" (click)="$event.stopPropagation()">
+      <h3 class="text-lg font-semibold text-gray-800 p-4 border-b border-gray-200">Detalhes da {{ week.label }}</h3>
+      <div class="p-4 max-h-[70vh] overflow-y-auto">
+        <ul class="divide-y divide-gray-100">
+          @for (item of gastosDaSemana(); track item.id) {
+          <li class="flex justify-between items-center py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+              <p class="text-sm text-gray-500">{{ formatDate(item.date, 'dd/MM/yyyy', 'pt-BR') }} - <span class="font-medium">{{ getCategoryName(item.category) }}</span></p>
+            </div>
+            <div class="text-right ml-2">
+              <p class="text-sm font-medium text-red-600">{{ formatCurrency(item.value) }}</p>
+              <div class="flex gap-2 justify-end mt-1">
+                <button (click)="handleDeleteFromCollapsible(item)" class="text-gray-400 hover:text-red-500" aria-label="Deletar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              </div>
+            </div>
+          </li>
+          } @empty {
+          <li class="py-3 text-sm text-gray-500 text-center">Nenhum gasto nesta semana.</li>
+          }
+        </ul>
+      </div>
+      <div class="flex justify-end p-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+        <button type="button" (click)="isWeekDetailsModalOpen.set(false)" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300">Fechar</button>
+      </div>
+    </div>
+  </div>
+  }
+  
+  @if (isCalendarPickerOpen()) {
+  <div class="fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-center items-center p-4" (click)="isCalendarPickerOpen.set(false)">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md" (click)="$event.stopPropagation()">
+      <h3 class="text-lg font-semibold text-gray-800 p-4 border-b border-gray-200">Selecione Mês e Ano</h3>
+      <div class="p-4">
+        <div class="flex justify-between items-center mb-4">
+          <button (click)="decrementDisplayYear()" aria-label="Ano anterior" class="p-2 rounded-full hover:bg-gray-200"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+          <span class="text-lg font-semibold">{{ displayYear() }}</span>
+          <button (click)="incrementDisplayYear()" aria-label="Próximo ano" class="p-2 rounded-full hover:bg-gray-200"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          @for (monthName of months; track monthName; let i = $index) {
+          <button 
+            (click)="selectMonthYear(displayYear(), i + 1)" 
+            class="py-3 rounded-lg text-sm font-medium transition-colors"
+            [class]="isSelectedMonth(displayYear(), i + 1) ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'">
+            {{ monthName }}
+          </button>
+          }
+        </div>
+      </div>
+      <div class="flex justify-end p-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+        <button type="button" (click)="isCalendarPickerOpen.set(false)" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Test Tool -->
+  <div class="fixed bottom-4 left-4 z-50">
+    <button (click)="isTestDatePopoverOpen.set(true)" class="bg-white rounded-full p-3 shadow-lg hover:bg-gray-200" aria-label="Definir data de teste">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+    </button>
+  
+    @if (isTestDatePopoverOpen()) {
+      <div class="absolute bottom-16 left-0 bg-white p-4 rounded-lg shadow-xl border w-72">
+          <p class="text-sm font-semibold text-gray-700 mb-2">Definir data "Hoje"</p>
+          <div class="flex gap-2">
+              <input type="date" [value]="testDateInput()" (input)="testDateInput.set($any($event.target).value)" class="w-full p-2 border border-gray-300 rounded-md bg-gray-50">
+              <button (click)="handleSetTestDate()" class="px-4 py-2 bg-blue-500 text-white rounded-md font-medium text-sm">OK</button>
+          </div>
+          <button (click)="isTestDatePopoverOpen.set(false)" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+    }
+  </div>
+</div>
+}

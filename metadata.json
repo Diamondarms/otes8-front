@@ -1,0 +1,5 @@
+{
+  "name": "Kakebo Personal Finance",
+  "description": "A personal finance application based on the Kakebo method to manage income, expenses, and savings goals. Track your monthly budget, set savings targets, and categorize variable spending to gain better control over your money.",
+  "requestFramePermissions": []
+}
