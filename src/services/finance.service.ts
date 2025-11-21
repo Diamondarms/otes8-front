@@ -36,7 +36,7 @@ interface RawRegistroModel {
   providedIn: 'root',
 })
 export class FinanceService {
-  private readonly apiUrl = 'http://localhost:3333';
+  private readonly apiUrl = '/api';
 
   // --- State Signals ---
   currentUser: WritableSignal<UserModel | null> = signal(null);
