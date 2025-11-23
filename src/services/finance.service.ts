@@ -12,7 +12,6 @@ import {
   RecordTypeEnum,
   CategoryEnum,
   AppDashboardData,
-  EducationalMessage,
 } from '../models/finance.models';
 import {
   getCurrentMesAno,
@@ -114,39 +113,6 @@ export class FinanceService {
     return this.calculateDashboardData(this.selectedMesAno());
   });
   
-  public educationalMessage = computed<EducationalMessage | null>(() => {
-    const registros = this.registros();
-    const meta = this.metaDoMes();
-    const dashboard = this.dashboardData();
-    const isPast = this.selectedMesAno() < getMesAnoFromDate(this.today());
-
-    if (!dashboard || isPast) {
-        return null;
-    }
-
-    // First record of the month
-    if (registros.length === 1) {
-        return { type: 'FIRST_RECORD' };
-    }
-
-    if (!meta || meta.value <= 0) {
-        return null; // No goal set, no goal-related messages
-    }
-    
-    // Goal achieved
-    if (dashboard.comparativoMeta.economizadoReal >= meta.value) {
-        return { type: 'GOAL_ACHIEVED', data: { metaValue: meta.value } };
-    }
-
-    // Goal near
-    if (dashboard.metaProgressoRealPercentual >= 80) {
-        return { type: 'GOAL_NEAR', data: { metaValue: meta.value } };
-    }
-
-    return null;
-  });
-
-
   private getRequestHeaders(): Headers {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -186,7 +152,13 @@ export class FinanceService {
     const totalGastosFixos = this.totalGastosFixos();
     const totalGastosVariaveis = this.totalGastosVariaveisEfetivados();
     const metaDefinida = this.metaDoMes()?.value || 0;
-    const disponivelVariaveis = this.dinheiroDisponivelGastosVariaveis();
+    
+    // Orçamento para gastos variáveis
+    const orcamentoVariaveis = this.dinheiroDisponivelGastosVariaveis();
+    
+    // Saldo restante (o que é exibido no card)
+    const saldoVariavelRestante = orcamentoVariaveis - totalGastosVariaveis;
+    
     const economizadoReal =
       totalEntradas - totalGastosFixos - totalGastosVariaveis;
 
@@ -200,16 +172,13 @@ export class FinanceService {
       metaProgressoRealPercentual = economizadoReal > 0 ? 100 : 0;
     }
 
-    let saldoDisponivelVsEntradasPercentual = 0;
-    if (totalEntradas > 0) {
-      saldoDisponivelVsEntradasPercentual = Math.max(
-        0,
-        (disponivelVariaveis / totalEntradas) * 100
-      );
+    let percentualSaldoVariavelRestante = 0;
+    if (orcamentoVariaveis > 0) {
+      percentualSaldoVariavelRestante = (saldoVariavelRestante / orcamentoVariaveis) * 100;
     }
 
     return {
-      dinheiroDisponivelGastosVariaveis: disponivelVariaveis,
+      dinheiroDisponivelGastosVariaveis: saldoVariavelRestante,
       sugestaoGastoSemanal:
         this.readSugestaoGastoSemanalDinamica(mes_ano_referencia),
       relatorioGastosVariaveisSemanal:
@@ -217,13 +186,13 @@ export class FinanceService {
           mes_ano_referencia
         ),
       dinheiroEconomizadoNoOrcamentoVariavel:
-        disponivelVariaveis - totalGastosVariaveis,
+        orcamentoVariaveis - totalGastosVariaveis,
       comparativoMeta: {
         meta: metaDefinida,
         economizadoReal,
         diferenca: economizadoReal - metaDefinida,
       },
-      saldoDisponivelVsEntradasPercentual,
+      percentualSaldoVariavelRestante: Math.max(0, percentualSaldoVariavelRestante),
       metaProgressoRealPercentual,
       totalEntradas,
       totalGastosFixos,

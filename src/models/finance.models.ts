@@ -51,17 +51,10 @@ export interface AppDashboardData {
     economizadoReal: number;
     diferenca: number;
   };
-  saldoDisponivelVsEntradasPercentual: number;
+  percentualSaldoVariavelRestante: number;
   metaProgressoRealPercentual: number;
   totalEntradas: number;
   totalGastosFixos: number;
   totalGastosVariaveisAvista: number;
   gastosVariaveisAvistaCategorias: Record<string, number>;
-}
-
-export type EducationalMessageType = 'FIRST_RECORD' | 'GOAL_NEAR' | 'GOAL_ACHIEVED';
-
-export interface EducationalMessage {
-    type: EducationalMessageType;
-    data?: any;
 }

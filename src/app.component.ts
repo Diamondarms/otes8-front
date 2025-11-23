@@ -9,7 +9,7 @@ import {
 import { CommonModule, formatCurrency, formatDate } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from './services/finance.service';
-import { WeekDateRangeFixed, RegistroModel, RecordTypeEnum, CategoryEnum, EducationalMessage } from './models/finance.models';
+import { WeekDateRangeFixed, RegistroModel, RecordTypeEnum, CategoryEnum } from './models/finance.models';
 import { getCurrentMesAno, getMesAnoFromDate, parseDate, getWeeksOfMonthFixed4 } from './utils/date.utils';
 
 @Component({
@@ -82,10 +82,6 @@ export class AppComponent {
   isMetaEditing = signal(false);
   editableMetaValor = signal("0");
 
-  // Educational Messages
-  isEducationalMessageVisible = signal(true);
-  educationalMessage = this.financeService.educationalMessage;
-
   constructor() {
     effect(() => {
         const [year] = this.currentMesAno().split('-').map(Number);
@@ -97,12 +93,6 @@ export class AppComponent {
         this.financeService.setMesAno(this.currentMesAno());
       }
     })
-
-    effect(() => {
-      // Reset visibility when month changes
-      this.currentMesAno(); // depend on this signal
-      this.isEducationalMessageVisible.set(true);
-    });
   }
 
   formatCurrency(value: number | undefined | null): string {
@@ -120,32 +110,6 @@ export class AppComponent {
     if (category === undefined || category === null) return '';
     const name = CategoryEnum[category];
     return name ? name.charAt(0).toUpperCase() + name.slice(1) : '';
-  }
-
-  dismissEducationalMessage() {
-    this.isEducationalMessageVisible.set(false);
-  }
-
-  formatEducationalMessage(message: EducationalMessage): { title: string; body: string } {
-    switch(message.type) {
-      case 'FIRST_RECORD':
-        return {
-          title: 'Bom Começo!',
-          body: 'Parabéns! Registrar seu primeiro item é o passo mais importante para organizar o mês.'
-        };
-      case 'GOAL_NEAR':
-        return {
-          title: 'Você está quase lá!',
-          body: `Falta pouco para atingir sua meta de economia de ${this.formatCurrency(message.data.metaValue)}. Continue assim!`
-        };
-      case 'GOAL_ACHIEVED':
-        return {
-          title: 'Meta Atingida!',
-          body: `Parabéns! Você alcançou (ou ultrapassou) sua meta de economia de ${this.formatCurrency(message.data.metaValue)}.`
-        };
-      default:
-        return { title: '', body: '' };
-    }
   }
 
   async handleLogin(event: Event) {
