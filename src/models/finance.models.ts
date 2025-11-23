@@ -58,3 +58,10 @@ export interface AppDashboardData {
   totalGastosVariaveisAvista: number;
   gastosVariaveisAvistaCategorias: Record<string, number>;
 }
+
+export type EducationalMessageType = 'FIRST_RECORD' | 'GOAL_NEAR' | 'GOAL_ACHIEVED';
+
+export interface EducationalMessage {
+    type: EducationalMessageType;
+    data?: any;
+}

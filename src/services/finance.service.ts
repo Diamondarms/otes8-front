@@ -12,6 +12,7 @@ import {
   RecordTypeEnum,
   CategoryEnum,
   AppDashboardData,
+  EducationalMessage,
 } from '../models/finance.models';
 import {
   getCurrentMesAno,
@@ -112,6 +113,39 @@ export class FinanceService {
     }
     return this.calculateDashboardData(this.selectedMesAno());
   });
+  
+  public educationalMessage = computed<EducationalMessage | null>(() => {
+    const registros = this.registros();
+    const meta = this.metaDoMes();
+    const dashboard = this.dashboardData();
+    const isPast = this.selectedMesAno() < getMesAnoFromDate(this.today());
+
+    if (!dashboard || isPast) {
+        return null;
+    }
+
+    // First record of the month
+    if (registros.length === 1) {
+        return { type: 'FIRST_RECORD' };
+    }
+
+    if (!meta || meta.value <= 0) {
+        return null; // No goal set, no goal-related messages
+    }
+    
+    // Goal achieved
+    if (dashboard.comparativoMeta.economizadoReal >= meta.value) {
+        return { type: 'GOAL_ACHIEVED', data: { metaValue: meta.value } };
+    }
+
+    // Goal near
+    if (dashboard.metaProgressoRealPercentual >= 80) {
+        return { type: 'GOAL_NEAR', data: { metaValue: meta.value } };
+    }
+
+    return null;
+  });
+
 
   private getRequestHeaders(): Headers {
     const headers = new Headers();
@@ -160,7 +194,7 @@ export class FinanceService {
     if (metaDefinida > 0) {
       metaProgressoRealPercentual = Math.max(
         0,
-        Math.min((economizadoReal / metaDefinida) * 100, 100)
+        (economizadoReal / metaDefinida) * 100
       );
     } else {
       metaProgressoRealPercentual = economizadoReal > 0 ? 100 : 0;
@@ -170,7 +204,7 @@ export class FinanceService {
     if (totalEntradas > 0) {
       saldoDisponivelVsEntradasPercentual = Math.max(
         0,
-        Math.min((disponivelVariaveis / totalEntradas) * 100, 100)
+        (disponivelVariaveis / totalEntradas) * 100
       );
     }
 
