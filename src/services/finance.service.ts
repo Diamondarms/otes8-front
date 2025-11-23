@@ -250,6 +250,12 @@ export class FinanceService {
     const disponivel = this.dinheiroDisponivelGastosVariaveis();
     const gastoAteAgora = this.totalGastosVariaveisEfetivados();
     const saldoVariavelRestante = disponivel - gastoAteAgora;
+
+    // If there's no money left for variable expenses, or already overspent, the suggestion is always 0.
+    if (saldoVariavelRestante <= 0) {
+        return 0;
+    }
+
     const semanasFixasDoMes = getWeeksOfMonthFixed4(mes_ano_referencia);
     if (semanasFixasDoMes.length === 0) return saldoVariavelRestante;
 
@@ -258,8 +264,13 @@ export class FinanceService {
       (semana) => today <= semana.endDate
     ).length;
 
-    if (semanasRestantes === 0) return saldoVariavelRestante > 0 ? saldoVariavelRestante : 0;
-    return semanasRestantes > 0 ? saldoVariavelRestante / semanasRestantes : 0;
+    // If no weeks are left in the period, the suggestion is whatever is left.
+    if (semanasRestantes === 0) {
+      return saldoVariavelRestante;
+    }
+    
+    // Otherwise, divide the remaining balance by the number of remaining weeks.
+    return saldoVariavelRestante / semanasRestantes;
   }
 
   private readRelatorioGastosVariaveisSemanalPorCategoriaESemana(

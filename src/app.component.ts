@@ -152,7 +152,7 @@ export class AppComponent {
     event.preventDefault();
     this.loginError.set('');
     if (!this.loginName()) {
-        this.loginError.set('Por favor, insira seu nome.');
+        this.loginError.set('Por favor, insira seu CPF.');
         return;
     }
     try {
